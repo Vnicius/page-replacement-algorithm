@@ -12,57 +12,32 @@ import math
 
 def fifo(ram_size, seq_pages):
     """FIFO Algorithm"""
-    ram = [0]*ram_size
+    ram = [None] * ram_size
     seq = copy.deepcopy(seq_pages)
-    page_table = [] #[page_number,validation_bit]
-    ocup = 0
     faults = 0
     frame_victim = 0
 
     for page in seq:
         #print(page)
-        if ocup < ram_size:  #if the ram is not full
-            for i in range(len(ram)):   #search for the next frame free
-                if ram[i] == 0:
-                    ram[i] = page
-                    break
+        if page in ram:     #see if the page is in the ram
+            continue
 
-            page_table.append([page,True])   #add page in page table
-            ocup += 1   #incr number of frames full in ram
-            faults += 1  #incr number of page faults
-            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
-        else:
-            if in_ram(page,page_table):     #see if the page is in the ram
-                continue
+        ram[frame_victim] = page    #set new page on the frame
 
-            if not in_page_table(page,page_table):  #if the page is in the page table
-                page_table.append([page,True])
+        if (frame_victim+1) != ram_size:
+            frame_victim += 1
+        else:       #if the next frame pass the ram size
+            frame_victim = 0
 
-            page_victim = ram[frame_victim]     #get the page victim
-            ram[frame_victim] = page    #set new page on the frame
-
-            for i in range(len(page_table)):    #uptade the frame the valiable bits on the page table
-                if page_table[i][0] == page_victim:
-                    page_table[i][1] = False
-                elif page_table[i][0] == page:
-                    page_table[i][1] = True
-
-            if (frame_victim+1) != ram_size:
-                frame_victim += 1
-            else:       #if the next frame pass the ram size
-                frame_victim = 0
-
-            faults += 1
-            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
+        faults += 1
+        #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
 
     print("FIFO: "+str(faults))
 
 def otm(ram_size,seq_pages):
     """Optimal Algorithm"""
-    ram = [0]*ram_size
+    ram = [None]*ram_size
     seq = copy.deepcopy(seq_pages)
-    page_table = []  #[page_number,valiable_bit]
-    ocup = 0
     faults = 0
     frame_victim = 0
     page = 0
@@ -70,134 +45,76 @@ def otm(ram_size,seq_pages):
     for p in range(len(seq_pages)):
         page = seq_pages[p]
         #print(page)
-        if ocup < ram_size:  #if the ram is not full
-            for i in range(len(ram)):   #search for the next frame free
-                if ram[i] == 0:
-                    ram[i] = page
-                    break
-
-            page_table.append([page,True])   #add page in page table
-            ocup += 1   #incr number of frames full in ram
-            faults += 1  #incr number of page faults
+        if page in ram:     #see if the page is in the ram
+            continue
+        elif None in ram:   #if has a empty space in ram
+            ram[ram.index(None)] = page
+            faults += 1
             #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
-        else:
-            if in_ram(page,page_table):     #see if the page is in the ram
-                continue
+            continue
 
-            if not in_page_table(page,page_table):  #if the page is in the page table
-                page_table.append([page,False])
+        aux = [math.inf] * ram_size    #axiliar array with next pages calls values
+        larger = 0      #the larger diff
 
-            aux = []    #axiliar array
+        for pg in range(p+1,len(seq_pages)):    #the rest of page in the sequence
+            for i in range(ram_size):
+                #if is the first ocorrence of the page in the sequence
+                if (aux[i] == math.inf) and (seq_pages[pg] == ram[i]):
+                    aux[i] = pg - p    #diff unil the next occurrence in the sequence
 
-            for pg in range(len(page_table)):   #array with pages in the memory
-                if page_table[pg][1]:
-                    aux.append([page_table[pg][0],math.inf])   #[page_number,nex_call]
+        for i in range(ram_size):
+            if aux[i] > larger:
+                larger = aux[i]
+                frame_victim = i
 
-            for pg in range(p+1,len(seq_pages)):    #the rest of page in the sequence
-                for i in range(len(aux)):
-                    #if is the first ocorrence of the page int the sequence
-                    if (aux[i][1] == math.inf) and (seq_pages[pg] == aux[i][0]):
-                        aux[i][1] = pg - p    #diff unil the next ocorrence in the sequence
+        ram[frame_victim] = page    #set the new page on the frame victim
 
-            larger = 0      #the larger diff
-            page_victim = 0
-
-            for pg in range(len(aux)):  #search the page with the larger diff
-                if aux[pg][1] > larger:
-                    larger = aux[pg][1]
-                    page_victim = aux[pg][0]    #set the page victim
-
-            for f in range(len(ram)):   #search the frame victim
-                if page_victim == ram[f]:
-                    frame_victim =  f
-                    break
-
-            ram[frame_victim] = page    #set the new page on the frame victim
-
-            for pg in range(len(page_table)):
-                if page_table[pg][0] == page_victim:
-                    page_table[pg][1] = False    #set valiable bit in the page victim on page table
-                elif page_table[pg][0] == page:
-                    page_table[pg][1] = True     #set valiable bit in the new page on page table
-
-            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
-            faults += 1     #incr faults
+        #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
+        faults += 1     #incr faults
 
     print("OTM "+str(faults))
 
 def lru(ram_size,seq_pages):
     """LRU Algorithm"""
-    ram = [0]*ram_size
+    ram = [None] * ram_size
     seq = copy.deepcopy(seq_pages)
-    page_table = []  #[page_number,valiable_bit,last_access]
-    ocup = 0
     faults = 0
     frame_victim = 0
-    page = 0
-    clock = 0
+    current_clock = 0
+    clocks = [0] * ram_size
 
     for page in seq:
         #print(page)
-        if ocup < ram_size:  #if the ram is not full
-            for i in range(len(ram)):   #search for the next frame free
-                if ram[i] == 0:
-                    ram[i] = page
-                    break
-
-            page_table.append([page,True,clock])   #add page in page table
-            clock += 1
-            ocup += 1   #incr number of frames full in ram
-            faults += 1  #incr number of page faults
-            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
-        else:
-            if in_ram(page,page_table):     #see if the page is in the ram
-                for pg in page_table:
-                    if pg[0] == page:
-                        pg[2] = clock
-                clock += 1
-                continue
-
-            if not in_page_table(page,page_table):  #if the page is in the page table
-                page_table.append([page,False,clock])
-
-            lr = clock      #last recent
-            frame_victim = 0
-            page_victim = 0
-
-            for f in range(len(ram)):
-                for p in page_table:
-                    #searching for the lasr recent by smaller clock value
-                    if (p[0] == ram[f]) and (p[2] < lr):
-                        lr = p[2]
-                        frame_victim = f
-                        page_victim = p[0]
-
-            ram[frame_victim] = page
-
-            for p in page_table:
-                if p[0] == page_victim:
-                    p[1] = False
-                elif p[0] == page:
-                    p[1] = True
-                    p[2] = clock
-
+        if page in ram:     #see if the page is in the ram
+            clocks[ram.index(page)] = current_clock
+            current_clock += 1
+            #print("clocks: "+str(clocks)+"\n\n")
+            continue
+        elif None in ram:
+            index = ram.index(None)     #search the next free frame
+            ram[index] = page       #set the page in the free frame
+            clocks[index] = current_clock   #set the current clock in th same position
             faults += 1
-            clock += 1
-            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
+            current_clock += 1
+            #print("ram: "+str(ram))
+            #print("clocks: "+str(clocks)+"\n\n")
+            continue
 
+        lr = current_clock      #last recent
+
+        for i in range(ram_size):
+            if clocks[i] < lr:
+                lr = clocks[i]
+                frame_victim = i
+
+        ram[frame_victim] = page
+        clocks[frame_victim] = current_clock
+
+        faults += 1
+        current_clock += 1
+        #print("ram: "+str(ram))
+        #print("clocks: "+str(clocks)+"\n\n")
     print("LRU: "+str(faults))
-
-def in_ram(page_num,page_table):
-    for pg in page_table:
-        if pg[0] == page_num:
-            return pg[1]
-    return False
-
-def in_page_table(page_num,page_table):
-    for pg in page_table:
-        if pg[0] == page_num:
-            return True
-    return False
 
 ##################################
 
