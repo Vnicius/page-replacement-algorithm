@@ -125,6 +125,68 @@ def otm(ram_size,seq_pages):
 
     print("OTM "+str(faults))
 
+def lru(ram_size,seq_pages):
+    """LRU Algorithm"""
+    ram = [0]*ram_size
+    seq = copy.deepcopy(seq_pages)
+    page_table = []  #[page_number,valiable_bit,last_access]
+    ocup = 0
+    faults = 0
+    frame_victim = 0
+    page = 0
+    clock = 0
+
+    for page in seq:
+        #print(page)
+        if ocup < ram_size:  #if the ram is not full
+            for i in range(len(ram)):   #search for the next frame free
+                if ram[i] == 0:
+                    ram[i] = page
+                    break
+
+            page_table.append([page,True,clock])   #add page in page table
+            clock += 1
+            ocup += 1   #incr number of frames full in ram
+            faults += 1  #incr number of page faults
+            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
+        else:
+            if in_ram(page,page_table):     #see if the page is in the ram
+                for pg in page_table:
+                    if pg[0] == page:
+                        pg[2] = clock
+                clock += 1
+                continue
+
+            if not in_page_table(page,page_table):  #if the page is in the page table
+                page_table.append([page,False,clock])
+
+            lr = clock      #last recent
+            frame_victim = 0
+            page_victim = 0
+
+            for f in range(len(ram)):
+                for p in page_table:
+                    #searching for the lasr recent by smaller clock value
+                    if (p[0] == ram[f]) and (p[2] < lr):
+                        lr = p[2]
+                        frame_victim = f
+                        page_victim = p[0]
+
+            ram[frame_victim] = page
+
+            for p in page_table:
+                if p[0] == page_victim:
+                    p[1] = False
+                elif p[0] == page:
+                    p[1] = True
+                    p[2] = clock
+
+            faults += 1
+            clock += 1
+            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
+
+    print("LRU: "+str(faults))
+
 def in_ram(page_num,page_table):
     for pg in page_table:
         if pg[0] == page_num:
@@ -154,4 +216,5 @@ if __name__ == "__main__":
         seq_pages.append(int(line.replace("\n","")))
 
     fifo(ram_size,seq_pages)    #call FIFO Algorithm
-    otm(ram_size,seq_pages)
+    otm(ram_size,seq_pages)     #call Optimal Algorithm
+    lru(ram_size,seq_pages)     #call LRU Algorithm
