@@ -18,25 +18,18 @@ def fifo(ram_size, seq_pages):
     frame_victim = 0
 
     for page in seq:
-        #print(page)
         if page in ram:     #see if the page is in the ram
             continue
 
         ram[frame_victim] = page    #set new page on the frame
-
-        if (frame_victim+1) != ram_size:
-            frame_victim += 1
-        else:       #if the next frame pass the ram size
-            frame_victim = 0
-
+        frame_victim = (frame_victim + 1) % ram_size
         faults += 1
-        #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
 
     print("FIFO: "+str(faults))
 
 def otm(ram_size,seq_pages):
     """Optimal Algorithm"""
-    ram = [None]*ram_size
+    ram = [None] * ram_size
     seq = copy.deepcopy(seq_pages)
     faults = 0
     frame_victim = 0
@@ -44,13 +37,12 @@ def otm(ram_size,seq_pages):
 
     for p in range(len(seq_pages)):
         page = seq_pages[p]
-        #print(page)
+
         if page in ram:     #see if the page is in the ram
             continue
         elif None in ram:   #if has a empty space in ram
             ram[ram.index(None)] = page
             faults += 1
-            #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
             continue
 
         aux = [math.inf] * ram_size    #axiliar array with next pages calls values
@@ -60,7 +52,7 @@ def otm(ram_size,seq_pages):
             for i in range(ram_size):
                 #if is the first ocorrence of the page in the sequence
                 if (aux[i] == math.inf) and (seq_pages[pg] == ram[i]):
-                    aux[i] = pg - p    #diff unil the next occurrence in the sequence
+                    aux[i] = pg - p    #diff until the next occurrence in the sequence
 
         for i in range(ram_size):
             if aux[i] > larger:
@@ -68,8 +60,6 @@ def otm(ram_size,seq_pages):
                 frame_victim = i
 
         ram[frame_victim] = page    #set the new page on the frame victim
-
-        #print("page_table: "+str(page_table)+"\nram: "+str(ram)+"\n\n")
         faults += 1     #incr faults
 
     print("OTM "+str(faults))
@@ -84,11 +74,9 @@ def lru(ram_size,seq_pages):
     clocks = [0] * ram_size
 
     for page in seq:
-        #print(page)
         if page in ram:     #see if the page is in the ram
             clocks[ram.index(page)] = current_clock
             current_clock += 1
-            #print("clocks: "+str(clocks)+"\n\n")
             continue
         elif None in ram:
             index = ram.index(None)     #search the next free frame
@@ -96,8 +84,6 @@ def lru(ram_size,seq_pages):
             clocks[index] = current_clock   #set the current clock in th same position
             faults += 1
             current_clock += 1
-            #print("ram: "+str(ram))
-            #print("clocks: "+str(clocks)+"\n\n")
             continue
 
         lr = current_clock      #last recent
@@ -109,11 +95,9 @@ def lru(ram_size,seq_pages):
 
         ram[frame_victim] = page
         clocks[frame_victim] = current_clock
-
         faults += 1
         current_clock += 1
-        #print("ram: "+str(ram))
-        #print("clocks: "+str(clocks)+"\n\n")
+
     print("LRU: "+str(faults))
 
 ##################################
